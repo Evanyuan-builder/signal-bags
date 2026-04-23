@@ -353,9 +353,199 @@
     }
     footer a { color: var(--text-dim); text-decoration: underline; }
     footer a:hover { color: var(--accent); }
+
+    /* ── Landing screen ────────────────────────────────────── */
+    .landing {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 48px 24px;
+      transition: opacity 0.5s ease-out;
+    }
+    .landing.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .landing-inner {
+      max-width: 720px;
+      width: 100%;
+      text-align: center;
+    }
+    .landing-status {
+      position: fixed;
+      top: 24px;
+      right: 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      animation: fadeIn 0.6s ease-out 0.3s forwards;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--warn);
+    }
+    .status-dot.ready {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+    }
+    .landing-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 88px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: slideUp 0.6s ease-out 0.15s forwards;
+    }
+    .landing-logo .dot { color: var(--accent); }
+    .landing-tagline {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 56px;
+      opacity: 0;
+      animation: slideUp 0.6s ease-out 0.45s forwards;
+    }
+    .landing-thesis {
+      font-size: 19px;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: slideUp 0.6s ease-out 0.75s forwards;
+    }
+    .landing-thesis .neg {
+      color: var(--text-dim);
+      display: block;
+    }
+    .landing-thesis .pos {
+      color: var(--text);
+      display: block;
+      margin-top: 14px;
+      border-left: 2px solid var(--accent);
+      padding-left: 16px;
+      text-align: left;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .landing-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 56px;
+      opacity: 0;
+      animation: slideUp 0.6s ease-out 1.05s forwards;
+    }
+    .stat {
+      padding: 16px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+    .landing-cta {
+      opacity: 0;
+      animation: slideUp 0.6s ease-out 1.35s forwards;
+    }
+    .cta-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 600;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 14px 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .cta-btn:hover {
+      background: var(--accent);
+      color: #0a0a0b;
+      box-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
+    }
+    .landing-foot {
+      margin-top: 56px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      opacity: 0;
+      animation: fadeIn 0.6s ease-out 1.6s forwards;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
+  <!-- Landing screen: 20-second hold for voice-over, then CTA to enter app -->
+  <div id="landing" class="landing">
+    <div class="landing-status">
+      <span id="landing-dot" class="status-dot"></span>
+      <span id="landing-status-text">booting harness…</span>
+    </div>
+    <div class="landing-inner">
+      <div class="landing-logo">Signal<span class="dot">.</span></div>
+      <div class="landing-tagline">Bags · pre-launch intelligence</div>
+      <div class="landing-thesis">
+        <span class="neg">Not a content generator. Not a token launcher.</span>
+        <span class="pos">
+          The judgment layer that sits <em>before</em> launch —
+          grounded in real Bags on-chain data, not model priors.
+        </span>
+      </div>
+      <div class="landing-stats">
+        <div class="stat">
+          <div class="stat-num" id="stat-launches">—</div>
+          <div class="stat-label">Bags launches indexed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">4</div>
+          <div class="stat-label">EvanCore backend lines</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">M2.7</div>
+          <div class="stat-label">MiniMax · tool-use agent</div>
+        </div>
+      </div>
+      <div class="landing-cta">
+        <button id="enter-btn" class="cta-btn">Enter Signal →</button>
+      </div>
+      <div class="landing-foot">built for Bags Hackathon 2026</div>
+    </div>
+  </div>
+
   <div class="container">
     <header>
       <h1>Signal<span class="accent">.</span></h1>
@@ -425,11 +615,46 @@
       });
     });
 
-    // Meta on load
+    // Landing screen wiring: populate stats + status, then enable Enter button
+    const landingEl = document.getElementById("landing");
+    const landingDot = document.getElementById("landing-dot");
+    const landingStatusText = document.getElementById("landing-status-text");
+    const statLaunches = document.getElementById("stat-launches");
+    const enterBtn = document.getElementById("enter-btn");
+
+    function animateCount(el, to, dur = 1200) {
+      const from = 0;
+      const t0 = performance.now();
+      function tick(now) {
+        const p = Math.min(1, (now - t0) / dur);
+        // ease-out cubic
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(from + (to - from) * eased).toLocaleString();
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // Meta on load — populate both landing + top-bar from same fetch.
     fetch("/api/meta").then(r => r.json()).then(m => {
-      metaModel.textContent = m.model_id || "—";
-      metaCount.textContent = (m.indexed_launches || 0).toLocaleString();
-    }).catch(() => { metaModel.textContent = "offline"; });
+      const model = m.model_id || "—";
+      const count = m.indexed_launches || 0;
+      metaModel.textContent = model;
+      metaCount.textContent = count.toLocaleString();
+      animateCount(statLaunches, count);
+      landingDot.classList.add("ready");
+      landingStatusText.textContent = `harness ready · ${model}`;
+    }).catch(() => {
+      metaModel.textContent = "offline";
+      statLaunches.textContent = "—";
+      landingStatusText.textContent = "server unreachable";
+    });
+
+    enterBtn.addEventListener("click", () => {
+      landingEl.classList.add("hide");
+      // Remove from layout after fade so it doesn't block scroll.
+      setTimeout(() => { landingEl.style.display = "none"; }, 600);
+    });
 
     // ── Timeline rendering ────────────────────────────────────
     let t0 = 0;
