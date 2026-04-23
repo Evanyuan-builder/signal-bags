@@ -1,0 +1,17 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+db/*.sqlite
+db/*.sqlite3
+db/*.db
+dist/
+build/
+*.egg-info/
+.evancore-signal/
+node_modules/
+.idea/
+.vscode/

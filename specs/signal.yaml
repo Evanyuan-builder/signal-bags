@@ -1,0 +1,50 @@
+# Signal — Bags launch intelligence harness
+# ============================================
+# EvanCore AgentHarness spec that drives Signal's three-phase flow:
+#   judge   → is this idea launch-ready?
+#   route   → 2-3 comparable paths, grounded in live Bags data
+#   action  → convert chosen path into a signable launch tx (future)
+#
+# Provider: OpenAI-compatible layer pointed at MiniMax (MiniMax-M2.7).
+# Base URL and key come from env (OPENAI_BASE_URL, OPENAI_API_KEY) —
+# see scripts/run_signal.py bootstrap.
+
+kind: AgentHarness
+id: signal-launch-copilot
+
+role:
+  ref: "signal://roles/bags_launch_strategist"
+  version: "latest"
+
+memory:
+  private_ns: "localmem://signal.session.private"
+  shared_ns: []
+  ttl: "7d"
+
+model:
+  provider: openai
+  model_id: MiniMax-M2.7
+  temperature: 0.2
+  max_tokens: 4096
+
+# MVP tool surface — only ship-tested tools are bound. Additional Bags
+# tools (ticker check / meta snapshot / launch tx) will join once their
+# skills land; the role persona already describes the full intended set.
+tools:
+  - id: bags__query_similar_launches
+    permissions: [read]
+  - id: memory-write
+    permissions: [write]
+  - id: memory-read
+    permissions: [read]
+
+skills: []
+
+policies:
+  budget_limit_usd: 2.0
+  rate_limit: "60req/hour"
+
+recovery:
+  max_retries: 2
+  backoff: exponential
+  fallback: stop

@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "signal-bags"
+version = "0.1.0"
+description = "Signal — AI launch intelligence copilot for Bags.fm creators"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+    "anthropic>=0.89",
+    "pyyaml>=6.0",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "mcp>=1.26",
+    "gql[aiohttp]>=3.5",
+    "sqlalchemy>=2.0",
+    "aiosqlite>=0.20",
+    "rich>=13.0",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra -q"
+
+[project.scripts]
+signal = "signalbags.api.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["signalbags"]
