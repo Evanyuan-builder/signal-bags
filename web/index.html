@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signal · Bags Launch Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --surface: #121215;
+      --surface-2: #1a1a20;
+      --border: #262630;
+      --text: #e8e8ee;
+      --text-dim: #9a9aa8;
+      --accent: #4ade80;
+      --accent-dim: #16a34a;
+      --warn: #fbbf24;
+      --error: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+    }
+    header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    header h1 .accent { color: var(--accent); }
+    header .tagline {
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+    header .meta {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+      text-align: right;
+    }
+    header .meta .kv { opacity: 0.75; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 96px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.55;
+      resize: vertical;
+      transition: border-color 0.15s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    textarea::placeholder { color: var(--text-dim); }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .preset-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: var(--surface-2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .preset-btn .num {
+      color: var(--accent);
+      margin-right: 6px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #0a0a0b;
+      font-weight: 600;
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.primary:hover { background: var(--accent-dim); color: white; }
+    button.primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .hint {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .progress {
+      display: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      padding: 16px 0;
+    }
+    .progress .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 10px;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .response {
+      min-height: 0;
+    }
+    .response.empty {
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+    .response-meta {
+      display: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .response-meta .chip {
+      display: inline-block;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-right: 8px;
+    }
+    .response-meta .chip.ok { color: var(--accent); border-color: var(--accent-dim); }
+    .response-meta .chip.error { color: var(--error); border-color: var(--error); }
+
+    .md { font-size: 14.5px; }
+    .md h1, .md h2, .md h3 {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      margin: 28px 0 12px;
+    }
+    .md h1 { font-size: 22px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .md h2 { font-size: 18px; font-weight: 600; color: var(--accent); }
+    .md h3 { font-size: 15px; font-weight: 600; color: var(--text); }
+    .md h2:first-child, .md h1:first-child, .md h3:first-child { margin-top: 0; }
+    .md p { margin: 10px 0; }
+    .md strong { color: var(--text); font-weight: 700; }
+    .md code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--surface-2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--accent);
+    }
+    .md pre code { display: block; padding: 12px; overflow-x: auto; }
+    .md table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    .md th, .md td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .md th {
+      background: var(--surface-2);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    .md ul, .md ol { padding-left: 22px; margin: 10px 0; }
+    .md li { margin: 6px 0; }
+    .md hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+    .md blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 16px;
+      margin: 16px 0;
+      color: var(--text-dim);
+    }
+
+    footer {
+      margin-top: 40px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+    }
+    footer a { color: var(--text-dim); text-decoration: underline; }
+    footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Signal<span class="accent">.</span></h1>
+      <div class="tagline">Bags launch intelligence · pre-launch strategy copilot</div>
+      <div class="meta">
+        <div class="kv">model: <span id="meta-model">…</span></div>
+        <div class="kv">indexed: <span id="meta-count">…</span> launches</div>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="card-label">Describe your launch idea, or paste a draft description to audit</div>
+      <textarea id="trigger" placeholder="e.g. A token for an AI agent that auto-trades memecoins based on volume trends and social sentiment — holders get a cut of the agent's PnL"></textarea>
+      <div class="presets">
+        <button class="preset-btn" data-preset="1"><span class="num">01</span> strong-match scenario</button>
+        <button class="preset-btn" data-preset="2"><span class="num">02</span> honest-uncertainty scenario</button>
+        <button class="preset-btn" data-preset="3"><span class="num">03</span> clone-detection scenario</button>
+      </div>
+      <div class="actions">
+        <button id="submit" class="primary">Ask Signal →</button>
+        <div class="hint">returns in ~15–30s · data grounded in live Bags launches</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Signal output</div>
+      <div id="progress" class="progress">
+        <span class="dot"></span><span id="progress-text">Searching Bags historical launches…</span>
+      </div>
+      <div id="response-meta" class="response-meta"></div>
+      <div id="response" class="response empty">Awaiting trigger.</div>
+    </div>
+
+    <footer>
+      built on <a href="https://github.com/evanyuan-builder/evancore" target="_blank">EvanCore</a>
+      · powered by MiniMax-M2.7
+      · Bags Hackathon 2026
+    </footer>
+  </div>
+
+  <script>
+    const PRESETS = {
+      1: "A token for an AI agent that auto-trades memecoins based on volume trends and social sentiment — holders get a cut of the agent's PnL and vote on trading parameters.",
+      2: "I want to launch a subscription-based AI code reviewer token. Holders pay to redeem PR-review credits and vote on the review rules the AI follows.",
+      3: "Here is the description I drafted for my Bags token: 'A token inspired by community content.' Please audit it before I go live.",
+    };
+
+    const PROGRESS_SEQUENCE = [
+      "Searching Bags historical launches…",
+      "Computing semantic similarity across 2,000+ past tokens…",
+      "Comparing narrative density and status distribution…",
+      "Forming launch-readiness judgment…",
+      "Drafting comparable paths with named comp tokens…",
+    ];
+
+    const triggerEl = document.getElementById("trigger");
+    const submitEl = document.getElementById("submit");
+    const progressEl = document.getElementById("progress");
+    const progressText = document.getElementById("progress-text");
+    const responseEl = document.getElementById("response");
+    const responseMeta = document.getElementById("response-meta");
+    const metaModel = document.getElementById("meta-model");
+    const metaCount = document.getElementById("meta-count");
+
+    // Wire up preset buttons
+    document.querySelectorAll(".preset-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        triggerEl.value = PRESETS[btn.dataset.preset];
+        triggerEl.focus();
+      });
+    });
+
+    // Fetch meta on load
+    fetch("/api/meta").then(r => r.json()).then(m => {
+      metaModel.textContent = m.model_id || "—";
+      metaCount.textContent = (m.indexed_launches || 0).toLocaleString();
+    }).catch(() => {
+      metaModel.textContent = "offline";
+    });
+
+    let progressTimer = null;
+
+    function startProgress() {
+      progressEl.style.display = "block";
+      responseEl.style.display = "none";
+      responseMeta.style.display = "none";
+      let i = 0;
+      progressText.textContent = PROGRESS_SEQUENCE[0];
+      progressTimer = setInterval(() => {
+        i = Math.min(i + 1, PROGRESS_SEQUENCE.length - 1);
+        progressText.textContent = PROGRESS_SEQUENCE[i];
+      }, 4500);
+    }
+
+    function stopProgress() {
+      if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+      progressEl.style.display = "none";
+      responseEl.style.display = "block";
+    }
+
+    async function ask() {
+      const trigger = triggerEl.value.trim();
+      if (!trigger) {
+        triggerEl.focus();
+        return;
+      }
+      submitEl.disabled = true;
+      startProgress();
+      const t0 = performance.now();
+      try {
+        const res = await fetch("/api/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ trigger }),
+        });
+        if (!res.ok) {
+          const detail = await res.text();
+          throw new Error(`HTTP ${res.status}: ${detail}`);
+        }
+        const data = await res.json();
+        const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+        stopProgress();
+
+        responseMeta.innerHTML = `
+          <span class="chip ${data.success ? "ok" : "error"}">${data.success ? "✓ success" : "✗ failed"}</span>
+          <span class="chip">${elapsed}s total</span>
+          <span class="chip">${data.tool_calls} tool call${data.tool_calls === 1 ? "" : "s"}</span>
+        `;
+        responseMeta.style.display = "block";
+        responseEl.classList.remove("empty");
+        responseEl.classList.add("md");
+        responseEl.innerHTML = marked.parse(data.output || data.error || "(no output)");
+      } catch (err) {
+        stopProgress();
+        responseEl.classList.remove("empty");
+        responseEl.classList.add("md");
+        responseEl.innerHTML = `<h3 style="color:var(--error)">Request failed</h3><p><code>${String(err)}</code></p>`;
+      } finally {
+        submitEl.disabled = false;
+      }
+    }
+
+    submitEl.addEventListener("click", ask);
+    triggerEl.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") ask();
+    });
+  </script>
+</body>
+</html>

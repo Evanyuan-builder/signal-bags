@@ -93,8 +93,11 @@ cp .env.example .env
 python -m scripts.index_bags --limit 2000   # ~17s: feed + pools + helius enrich
 python -m scripts.build_embeddings          # ~4s after model cache is warm
 
-# 4. Run Signal
+# 4a. Run Signal via CLI
 python -m scripts.run_signal "我想为我的直播社区发一个 AI 助手币"
+
+# 4b. Or launch the web UI (opens http://127.0.0.1:8000 automatically)
+python -m scripts.serve
 ```
 
 ---
