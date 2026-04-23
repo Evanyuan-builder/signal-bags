@@ -46,12 +46,13 @@ SCENARIOS = [
         "label": "Scenario 1 / 3 — Strong-match",
         "intent": "A pitch with comparable Bags precedent — show Signal citing real data",
         "query": (
-            "我想为我的直播社区发一个 AI 助手币，主打帮主播自动回复粉丝、"
-            "分析观众情绪、维护会员福利"
+            "A token for an AI agent that auto-trades memecoins based on volume "
+            "trends and social sentiment — holders get a cut of the agent's PnL "
+            "and vote on trading parameters."
         ),
         "watch_for": (
             "Signal calls bags__query_similar_launches on its own, cites "
-            "4 comparable AI-assistant tokens in 0.40–0.51, returns 3 paths, "
+            "comparable AI-agent tokens (e.g. BTI, BOND, RAI), returns 3 paths, "
             "ends with clarifying questions instead of a hype recommendation."
         ),
     },
@@ -59,26 +60,29 @@ SCENARIOS = [
         "label": "Scenario 2 / 3 — Honest uncertainty",
         "intent": "A pitch with only one weak comp — show Signal refusing to fabricate",
         "query": (
-            "我想发一个面向独立开发者的 AI 代码审查工具代币，"
-            "让订阅用户能用代币换取 PR 审查积分"
+            "I want to launch a subscription-based AI code reviewer token. "
+            "Holders pay to redeem PR-review credits and vote on the review "
+            "rules the AI follows."
         ),
         "watch_for": (
-            "Signal names TURINGMIND as the closest comp (0.586) but flags "
+            "Signal names TURINGMIND as the closest comp (~0.58) but flags "
             "its feed status as None — 'may have failed, verify first'. "
-            "Recommendation block does NOT commit to a path."
+            "Next-steps block does NOT commit to a path."
         ),
     },
     {
         "label": "Scenario 3 / 3 — Clone detection",
         "intent": "An existing draft description — show Signal catching the clone",
         "query": (
-            "这是我打算给我的 Bags 代币写的描述："
-            "'A token inspired by community content.' 帮我在发射前审视一下这段描述。"
+            "Here is the description I drafted for my Bags token: "
+            "'A token inspired by community content.' Please audit it "
+            "before I go live."
         ),
         "watch_for": (
             "MiniMax extracts the quoted draft, tool returns two existing "
-            "'Community Token' launches at 0.703 each. Signal opens with "
-            "'判断：描述重复风险极高' and calls the draft '一字不差'."
+            "'Community Token' launches at ~0.70 each. Signal opens with "
+            "'Verdict: high duplicate risk' and calls the draft 'word-for-word "
+            "identical' to existing launches."
         ),
     },
 ]
