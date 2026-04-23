@@ -13,7 +13,11 @@ contention matters for a demo.
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import os
+import queue
+import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -21,6 +25,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -166,6 +171,136 @@ async def query(req: QueryRequest) -> QueryResponse:
         error=result.error,
         duration_ms=duration_ms,
         tool_calls=tool_calls,
+    )
+
+
+# ── Streaming endpoint ────────────────────────────────────────────────────
+#
+# /api/query/stream pushes EvanCore HarnessEvents to the browser as they
+# happen (tool calls, tool results, task lifecycle), then emits a final
+# `done` event with the aggregated output. Uses SSE-framed chunks over
+# a POST body — standard EventSource can't POST, so the frontend reads
+# the response body as a stream via fetch + getReader.
+
+_MAX_PAYLOAD_CHARS = 600  # trim huge tool_result strings before sending
+
+
+def _safe_jsonable(obj: Any) -> Any:
+    """Recursively convert an arbitrary payload to JSON-serializable form.
+
+    HarnessEvent.payload may carry pydantic models, enums, datetimes,
+    or long strings. We normalize to primitives and trim strings so a
+    verbose tool_result doesn't dominate the SSE frame.
+    """
+    from enum import Enum
+    from datetime import datetime as _dt
+
+    if obj is None or isinstance(obj, (bool, int, float)):
+        return obj
+    if isinstance(obj, str):
+        return obj if len(obj) <= _MAX_PAYLOAD_CHARS else obj[:_MAX_PAYLOAD_CHARS] + "…"
+    if isinstance(obj, Enum):
+        return obj.value
+    if isinstance(obj, _dt):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {str(k): _safe_jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, set)):
+        return [_safe_jsonable(v) for v in obj]
+    # pydantic v2 model
+    dump = getattr(obj, "model_dump", None)
+    if callable(dump):
+        try:
+            return _safe_jsonable(dump())
+        except Exception:
+            pass
+    return repr(obj)[:_MAX_PAYLOAD_CHARS]
+
+
+def _sse_frame(event_name: str, data: dict) -> str:
+    return f"event: {event_name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@app.post("/api/query/stream")
+async def query_stream(req: QueryRequest):
+    trigger = (req.trigger or "").strip()
+    if not trigger:
+        raise HTTPException(status_code=400, detail="trigger is empty")
+
+    harness = app.state.harness
+    engine = app.state.engine
+    harness_id = harness.harness_id
+
+    # Thread-safe queue pipes bus events from the worker thread to the
+    # async generator running on the event loop.
+    q: queue.Queue = queue.Queue()
+
+    from events.bus import bus  # evancore
+
+    def _handler(ev) -> None:
+        # Only forward events for our harness; other harnesses in the
+        # same process (unlikely here) should stay isolated.
+        if getattr(ev, "harness_id", None) != harness_id:
+            return
+        q.put(("event", {
+            "type": ev.type.value,
+            "event_id": ev.event_id,
+            "timestamp": ev.timestamp.isoformat(),
+            "payload": _safe_jsonable(ev.payload or {}),
+        }))
+
+    bus.subscribe_all(_handler)
+
+    def _runner() -> None:
+        try:
+            t0 = time.time()
+            result = engine.run(harness_id, trigger)
+            duration_ms = int((time.time() - t0) * 1000)
+            q.put(("done", {
+                "success": bool(result.success),
+                "output": result.output or "",
+                "error": result.error,
+                "duration_ms": duration_ms,
+            }))
+        except Exception as e:
+            q.put(("error", {"error": f"{type(e).__name__}: {e}"}))
+        finally:
+            q.put(("close", {}))
+
+    thread = threading.Thread(target=_runner, daemon=True)
+    thread.start()
+
+    async def _generator():
+        try:
+            # Announce start so the client can render the timeline
+            # immediately, before the first bus event arrives.
+            yield _sse_frame("start", {"harness_id": harness_id, "trigger": trigger[:200]})
+            while True:
+                kind, data = await asyncio.to_thread(q.get)
+                if kind == "event":
+                    yield _sse_frame("harness", data)
+                elif kind == "done":
+                    yield _sse_frame("done", data)
+                elif kind == "error":
+                    yield _sse_frame("error", data)
+                elif kind == "close":
+                    break
+        finally:
+            # Best-effort handler removal — EvanCore's bus has no
+            # per-handler unsubscribe, so we reach into the private
+            # wildcards list. Pragmatic for this demo.
+            try:
+                bus._wildcards.remove(_handler)  # noqa: SLF001
+            except ValueError:
+                pass
+
+    return StreamingResponse(
+        _generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # disable proxy buffering if any
+        },
     )
 
 

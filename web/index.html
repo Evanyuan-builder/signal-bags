@@ -153,25 +153,114 @@
       color: var(--text-dim);
     }
 
-    .progress {
+    /* ── Live event timeline ─────────────────────────────────── */
+    .timeline {
       display: none;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      color: var(--accent);
-      padding: 16px 0;
+      font-size: 12.5px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      max-height: 360px;
+      overflow-y: auto;
     }
-    .progress .dot {
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-dim);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tl-row {
+      display: grid;
+      grid-template-columns: 24px 1fr 62px;
+      gap: 10px;
+      padding: 4px 0;
+      align-items: start;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .tl-icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 13px;
+    }
+    .tl-body { line-height: 1.45; }
+    .tl-body .k {
+      color: var(--text);
+      font-weight: 500;
+    }
+    .tl-body .v {
+      color: var(--text-dim);
+      margin-left: 6px;
+    }
+    .tl-body .sub {
+      color: var(--text-dim);
+      font-size: 11.5px;
+      margin-top: 2px;
+    }
+    .tl-body .chip {
       display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: var(--accent);
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.35);
+      color: var(--accent);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      margin-right: 6px;
+    }
+    .tl-t {
+      color: var(--text-dim);
+      font-size: 11px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .tl-row.tool .tl-icon { color: #fbbf24; }
+    .tl-row.result .tl-icon { color: var(--accent); }
+    .tl-row.reason .tl-icon { color: #a78bfa; }
+    .tl-row.done .tl-icon { color: var(--accent); }
+    .tl-row.error .tl-icon { color: var(--error); }
+    .tl-row.warn .tl-icon { color: var(--warn); }
+    .tl-row.warn .chip {
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: var(--warn);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      margin-right: 6px;
+      display: inline-block;
+    }
+    .tl-reasoning {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #a78bfa;
+      padding: 4px 0;
+    }
+    .tl-reasoning .dot {
+      width: 6px;
+      height: 6px;
+      background: #a78bfa;
       border-radius: 50%;
-      margin-right: 10px;
-      animation: pulse 1.2s ease-in-out infinite;
+      animation: pulse 1s ease-in-out infinite;
     }
     @keyframes pulse {
-      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      0%, 100% { opacity: 0.3; transform: scale(0.7); }
       50% { opacity: 1; transform: scale(1.1); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-2px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .response {
@@ -293,8 +382,12 @@
 
     <div class="card">
       <div class="card-label">Signal output</div>
-      <div id="progress" class="progress">
-        <span class="dot"></span><span id="progress-text">Searching Bags historical launches…</span>
+      <div id="timeline" class="timeline">
+        <div class="timeline-header">
+          <span>live agent trace</span>
+          <span id="tl-elapsed">0.0s</span>
+        </div>
+        <div id="tl-body"></div>
       </div>
       <div id="response-meta" class="response-meta"></div>
       <div id="response" class="response empty">Awaiting trigger.</div>
@@ -314,24 +407,17 @@
       3: "Here is the description I drafted for my Bags token: 'A token inspired by community content.' Please audit it before I go live.",
     };
 
-    const PROGRESS_SEQUENCE = [
-      "Searching Bags historical launches…",
-      "Computing semantic similarity across 2,000+ past tokens…",
-      "Comparing narrative density and status distribution…",
-      "Forming launch-readiness judgment…",
-      "Drafting comparable paths with named comp tokens…",
-    ];
-
     const triggerEl = document.getElementById("trigger");
     const submitEl = document.getElementById("submit");
-    const progressEl = document.getElementById("progress");
-    const progressText = document.getElementById("progress-text");
+    const timelineEl = document.getElementById("timeline");
+    const tlBody = document.getElementById("tl-body");
+    const tlElapsed = document.getElementById("tl-elapsed");
     const responseEl = document.getElementById("response");
     const responseMeta = document.getElementById("response-meta");
     const metaModel = document.getElementById("meta-model");
     const metaCount = document.getElementById("meta-count");
 
-    // Wire up preset buttons
+    // Preset buttons
     document.querySelectorAll(".preset-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         triggerEl.value = PRESETS[btn.dataset.preset];
@@ -339,71 +425,243 @@
       });
     });
 
-    // Fetch meta on load
+    // Meta on load
     fetch("/api/meta").then(r => r.json()).then(m => {
       metaModel.textContent = m.model_id || "—";
       metaCount.textContent = (m.indexed_launches || 0).toLocaleString();
-    }).catch(() => {
-      metaModel.textContent = "offline";
-    });
+    }).catch(() => { metaModel.textContent = "offline"; });
 
-    let progressTimer = null;
+    // ── Timeline rendering ────────────────────────────────────
+    let t0 = 0;
+    let elapsedTimer = null;
+    let reasoningRow = null;  // active "thinking" placeholder between tool_result and next event
 
-    function startProgress() {
-      progressEl.style.display = "block";
-      responseEl.style.display = "none";
-      responseMeta.style.display = "none";
-      let i = 0;
-      progressText.textContent = PROGRESS_SEQUENCE[0];
-      progressTimer = setInterval(() => {
-        i = Math.min(i + 1, PROGRESS_SEQUENCE.length - 1);
-        progressText.textContent = PROGRESS_SEQUENCE[i];
-      }, 4500);
+    function resetTimeline() {
+      tlBody.innerHTML = "";
+      tlElapsed.textContent = "0.0s";
+      reasoningRow = null;
+    }
+    function startElapsed() {
+      t0 = performance.now();
+      clearInterval(elapsedTimer);
+      elapsedTimer = setInterval(() => {
+        const s = (performance.now() - t0) / 1000;
+        tlElapsed.textContent = s.toFixed(1) + "s";
+      }, 100);
+    }
+    function stopElapsed() { clearInterval(elapsedTimer); elapsedTimer = null; }
+    function stampNow() { return "+" + ((performance.now() - t0) / 1000).toFixed(1) + "s"; }
+
+    function dropReasoning() {
+      if (reasoningRow) { reasoningRow.remove(); reasoningRow = null; }
     }
 
-    function stopProgress() {
-      if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
-      progressEl.style.display = "none";
-      responseEl.style.display = "block";
+    function addRow({icon, cls, html, t}) {
+      dropReasoning();
+      const row = document.createElement("div");
+      row.className = "tl-row" + (cls ? " " + cls : "");
+      row.innerHTML = `
+        <div class="tl-icon">${icon}</div>
+        <div class="tl-body">${html}</div>
+        <div class="tl-t">${t || stampNow()}</div>
+      `;
+      tlBody.appendChild(row);
+      timelineEl.scrollTop = timelineEl.scrollHeight;
+    }
+
+    function addReasoningPlaceholder(label) {
+      dropReasoning();
+      const row = document.createElement("div");
+      row.className = "tl-row reason";
+      row.innerHTML = `
+        <div class="tl-icon">💭</div>
+        <div class="tl-body">
+          <div class="tl-reasoning"><span class="dot"></span><span>${label}</span></div>
+        </div>
+        <div class="tl-t">${stampNow()}</div>
+      `;
+      tlBody.appendChild(row);
+      timelineEl.scrollTop = timelineEl.scrollHeight;
+      reasoningRow = row;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    function renderEvent(ev) {
+      const p = ev.payload || {};
+      switch (ev.type) {
+        case "harness.started":
+        case "session.started":
+          addRow({icon: "⚡", html: `<span class="k">${ev.type}</span>`});
+          return;
+        case "task.received":
+          addRow({icon: "📨", html: `<span class="k">task.received</span><span class="v">${escapeHtml((p.trigger || "").slice(0, 80))}</span>`});
+          return;
+        case "step.executed":
+          // Show a reasoning placeholder until the next event displaces it
+          addReasoningPlaceholder("reasoning over context…");
+          return;
+        case "tool.called": {
+          const tool = p.tool_id || "tool";
+          const inp = typeof p.input === "string" ? p.input : JSON.stringify(p.input || p.query || {});
+          addRow({
+            icon: "🔧",
+            cls: "tool",
+            html: `<span class="chip">TOOL</span><span class="k">${escapeHtml(tool)}</span>
+                   <div class="sub">${escapeHtml(inp.slice(0, 200))}${inp.length > 200 ? "…" : ""}</div>`,
+          });
+          return;
+        }
+        case "tool.result": {
+          const ok = p.success !== false;
+          const out = p.output || p.result || "";
+          addRow({
+            icon: ok ? "✓" : "✗",
+            cls: "result",
+            html: `<span class="k">tool.result</span>
+                   <span class="v">${ok ? "success" : "failure"}</span>
+                   <div class="sub">${escapeHtml(String(out).slice(0, 220))}${String(out).length > 220 ? "…" : ""}</div>`,
+          });
+          addReasoningPlaceholder("model forming judgment…");
+          return;
+        }
+        case "task.completed":
+          addRow({icon: "✓", cls: "done", html: `<span class="k">task.completed</span>`});
+          return;
+        case "task.failed": {
+          const errMsg = (p.error || "").slice(0, 180);
+          addRow({
+            icon: "⚠",
+            cls: "warn",
+            html: `<span class="chip">FAIL</span><span class="k">task.failed</span>
+                   <div class="sub">${escapeHtml(errMsg)}${(p.error || "").length > 180 ? "…" : ""}</div>`,
+          });
+          return;
+        }
+        case "retry.attempted":
+          addRow({
+            icon: "⟳",
+            cls: "warn",
+            html: `<span class="k">retrying</span>
+                   <span class="v">attempt ${p.attempt}/${p.max_retries} · backoff ${p.backoff_s}s</span>`,
+          });
+          addReasoningPlaceholder(`waiting ${p.backoff_s}s before retry…`);
+          return;
+        case "recovery.failed":
+          addRow({
+            icon: "✗",
+            cls: "error",
+            html: `<span class="k">recovery.failed</span>
+                   <div class="sub">all retries exhausted</div>`,
+          });
+          return;
+        case "session.completed":
+        case "harness.stopped":
+          // quieter lifecycle events — render as dim
+          addRow({icon: "·", html: `<span class="v">${ev.type}</span>`});
+          return;
+        case "state.transitioned":
+          return;  // hide: too noisy
+        default:
+          addRow({icon: "·", html: `<span class="v">${ev.type}</span>`});
+      }
+    }
+
+    // ── Stream consumer ──────────────────────────────────────
+    async function streamAsk(trigger) {
+      const resp = await fetch("/api/query/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trigger }),
+      });
+      if (!resp.ok) {
+        const msg = await resp.text();
+        throw new Error(`HTTP ${resp.status}: ${msg}`);
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buf = "";
+      let finalData = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const frames = buf.split("\n\n");
+        buf = frames.pop();  // last incomplete frame stays in buffer
+        for (const frame of frames) {
+          if (!frame.trim()) continue;
+          let evName = "message";
+          let dataLine = "";
+          for (const line of frame.split("\n")) {
+            if (line.startsWith("event: ")) evName = line.slice(7).trim();
+            else if (line.startsWith("data: ")) dataLine += line.slice(6);
+          }
+          let payload;
+          try { payload = JSON.parse(dataLine); } catch { continue; }
+          if (evName === "start") {
+            // no-op, timeline already open
+          } else if (evName === "harness") {
+            renderEvent(payload);
+          } else if (evName === "done") {
+            finalData = payload;
+          } else if (evName === "error") {
+            throw new Error(payload.error || "unknown stream error");
+          }
+        }
+      }
+      return finalData;
     }
 
     async function ask() {
       const trigger = triggerEl.value.trim();
-      if (!trigger) {
-        triggerEl.focus();
-        return;
-      }
+      if (!trigger) { triggerEl.focus(); return; }
       submitEl.disabled = true;
-      startProgress();
-      const t0 = performance.now();
-      try {
-        const res = await fetch("/api/query", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ trigger }),
-        });
-        if (!res.ok) {
-          const detail = await res.text();
-          throw new Error(`HTTP ${res.status}: ${detail}`);
-        }
-        const data = await res.json();
-        const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-        stopProgress();
+      responseEl.style.display = "none";
+      responseMeta.style.display = "none";
+      timelineEl.style.display = "block";
+      resetTimeline();
+      startElapsed();
 
+      try {
+        const final = await streamAsk(trigger);
+        stopElapsed();
+        dropReasoning();
+
+        if (!final) throw new Error("stream ended without final result");
+        const elapsed = (final.duration_ms / 1000).toFixed(1);
+
+        addRow({
+          icon: "✓",
+          cls: "done",
+          html: `<span class="k">done</span><span class="v">${elapsed}s total</span>`,
+          t: "+" + elapsed + "s",
+        });
+
+        // Count tool calls from timeline (cheap)
+        const toolCount = tlBody.querySelectorAll(".tl-row.tool").length;
         responseMeta.innerHTML = `
-          <span class="chip ${data.success ? "ok" : "error"}">${data.success ? "✓ success" : "✗ failed"}</span>
+          <span class="chip ${final.success ? "ok" : "error"}">${final.success ? "✓ success" : "✗ failed"}</span>
           <span class="chip">${elapsed}s total</span>
-          <span class="chip">${data.tool_calls} tool call${data.tool_calls === 1 ? "" : "s"}</span>
+          <span class="chip">${toolCount} tool call${toolCount === 1 ? "" : "s"}</span>
         `;
         responseMeta.style.display = "block";
         responseEl.classList.remove("empty");
         responseEl.classList.add("md");
-        responseEl.innerHTML = marked.parse(data.output || data.error || "(no output)");
+        responseEl.style.display = "block";
+        responseEl.innerHTML = marked.parse(final.output || final.error || "(no output)");
       } catch (err) {
-        stopProgress();
+        stopElapsed();
+        dropReasoning();
+        addRow({icon: "✗", cls: "error", html: `<span class="k">stream error</span><div class="sub">${escapeHtml(String(err))}</div>`});
         responseEl.classList.remove("empty");
         responseEl.classList.add("md");
-        responseEl.innerHTML = `<h3 style="color:var(--error)">Request failed</h3><p><code>${String(err)}</code></p>`;
+        responseEl.style.display = "block";
+        responseEl.innerHTML = `<h3 style="color:var(--error)">Request failed</h3><p><code>${escapeHtml(String(err))}</code></p>`;
       } finally {
         submitEl.disabled = false;
       }
