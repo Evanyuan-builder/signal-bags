@@ -11,6 +11,15 @@ just decisions you can defend.
 
 ---
 
+## What Signal is — and isn't
+
+- **Is** a launch strategist grounded in 2,000+ real Bags launches.
+- **Isn't** a launcher — it does not sign or send the launch transaction.
+- **Isn't** a hype copy generator — no tagline writing, no ticker naming.
+- **Isn't** a trading bot — it doesn't read prices, hold positions, or signal buys/sells.
+
+---
+
 ## What Signal does
 
 Given a user's launch idea, Signal will:
@@ -64,7 +73,7 @@ Bags launches** pulled from the Bags API + Helius DAS API.
                               └──────────────────────────┘
 ```
 
-Signal is built on top of [EvanCore](https://github.com/evanyuan-builder/evancore),
+Signal is built on top of [EvanCore](https://github.com/Evanyuan-builder/evancore),
 a harness-engineering platform with a v2 pluggable backend model
 (Role / Skill / Memory / Tool). Signal adds two backends — `signal://`
 for roles and `bags://` for tools — without touching EvanCore core.
@@ -75,7 +84,7 @@ for roles and `bags://` for tools — without touching EvanCore core.
 
 ```bash
 # 1. Install EvanCore (sibling clone required) + Signal
-git clone https://github.com/evanyuan-builder/evancore ../evancore
+git clone https://github.com/Evanyuan-builder/evancore ../evancore
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e ../evancore
 pip install -e ".[test]"
