@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="dotGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4ade80" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#4ade80" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+    </radialGradient>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@800&display=swap');
+      .s { font-family: 'JetBrains Mono', ui-monospace, 'Menlo', monospace; font-weight: 800; fill: #e8e8ee; }
+    </style>
+  </defs>
+  <rect width="1024" height="1024" fill="#0a0a0b"/>
+  <!-- glow halo under the dot -->
+  <circle cx="680" cy="640" r="150" fill="url(#dotGlow)"/>
+  <!-- S wordmark -->
+  <text x="300" y="680" class="s" font-size="640" text-anchor="middle">S</text>
+  <!-- accent dot -->
+  <circle cx="680" cy="640" r="72" fill="#4ade80"/>
+</svg>
